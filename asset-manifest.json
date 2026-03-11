@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/coinflip-tg-admin/static/css/main.0560b166.css",
+    "main.js": "/coinflip-tg-admin/static/js/main.e321e4da.js",
+    "index.html": "/coinflip-tg-admin/index.html",
+    "main.0560b166.css.map": "/coinflip-tg-admin/static/css/main.0560b166.css.map",
+    "main.e321e4da.js.map": "/coinflip-tg-admin/static/js/main.e321e4da.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0560b166.css",
+    "static/js/main.e321e4da.js"
+  ]
+}
