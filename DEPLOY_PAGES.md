@@ -3,7 +3,7 @@
 ## Branch mapping
 
 - `main` -> production Pages deployment (workflow: `deploy-pages.yml`)
-- `dev-client` -> dev build deployed to `gh-pages` branch under `/dev` (workflow: `deploy-pages-dev.yml`)
+- `dev` -> dev build deployed to `gh-pages` branch under `/dev` (workflow: `deploy-pages-dev.yml`)
 
 ## Required secrets
 
