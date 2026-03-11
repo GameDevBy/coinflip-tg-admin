@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import moment from "moment";
 import {
+  fetchAdminWalletBalanceSnapshot,
   fetchUnrecognizedWebhookEvents,
   fetchGamesHistory,
   fetchShopStats,
@@ -138,6 +139,7 @@ const AdminDashboard = ({ sessionToken }) => {
   });
 
   const [users, setUsers] = useState([]);
+  const [walletBalanceSnapshot, setWalletBalanceSnapshot] = useState(null);
   const [userFilters, setUserFilters] = useState({
     telegramId: "",
     username: "",
@@ -195,10 +197,14 @@ const AdminDashboard = ({ sessionToken }) => {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const data = await fetchUsersScoreRating(sessionToken, {
-        ...userFilters,
-      });
-      setUsers(data || []);
+      const [usersData, walletBalanceData] = await Promise.all([
+        fetchUsersScoreRating(sessionToken, {
+          ...userFilters,
+        }),
+        fetchAdminWalletBalanceSnapshot(sessionToken),
+      ]);
+      setUsers(usersData || []);
+      setWalletBalanceSnapshot(walletBalanceData || null);
     } finally {
       setLoading(false);
     }
@@ -334,6 +340,16 @@ const AdminDashboard = ({ sessionToken }) => {
       ),
     [users],
   );
+
+  const cryptoWalletHeaderText = useMemo(() => {
+    if (!walletBalanceSnapshot) {
+      return "Crypto wallet: loading...";
+    }
+    if (!walletBalanceSnapshot.cryptoWalletBalanceAvailable) {
+      return "Crypto wallet: unavailable";
+    }
+    return `Crypto wallet: ${usdtFromMicros(walletBalanceSnapshot.cryptoWalletUsdtMicros)} USDT`;
+  }, [walletBalanceSnapshot]);
 
   const shopSummaryByBuff = useMemo(() => {
     const totals = {};
@@ -712,6 +728,27 @@ const AdminDashboard = ({ sessionToken }) => {
       <button className="button" disabled={loading} onClick={loadUsers}>
         Load Users Score/Rate
       </button>
+      {walletBalanceSnapshot && (
+        <div className="item" style={{ marginTop: 10, display: "grid", gap: 4 }}>
+          <strong>Balance Section</strong>
+          <div>
+            1. Crypto wallet balance:{" "}
+            {walletBalanceSnapshot.cryptoWalletBalanceAvailable
+              ? `${usdtFromMicros(walletBalanceSnapshot.cryptoWalletUsdtMicros)} USDT (Ⓕ${flipkyFromCents(
+                  walletBalanceSnapshot.cryptoWalletFlipkyCents,
+                )})`
+              : `Unavailable${walletBalanceSnapshot.cryptoWalletBalanceError ? ` (${walletBalanceSnapshot.cryptoWalletBalanceError})` : ""}`}
+          </div>
+          <div>
+            2. Calculated API balance: Ⓕ{flipkyFromCents(walletBalanceSnapshot.calculatedApiBalanceFlipkyCents)} (Deposit Ⓕ
+            {flipkyFromCents(walletBalanceSnapshot.depositFlipkyCents)} - Withdraw Ⓕ
+            {flipkyFromCents(walletBalanceSnapshot.withdrawFlipkyCents)} - Purchased Ⓕ
+            {flipkyFromCents(walletBalanceSnapshot.purchasedFlipkyCents)})
+          </div>
+          <div>3. Full users balances: Ⓕ{flipkyFromCents(walletBalanceSnapshot.totalUsersBalanceFlipkyCents)}</div>
+          <div>Loaded users balances (current filters): Ⓕ{flipkyFromCents(usersSummary.balanceCents)}</div>
+        </div>
+      )}
       <div className="tableWrap">
         <table>
           <thead>
@@ -882,9 +919,31 @@ const AdminDashboard = ({ sessionToken }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchAdminWalletBalanceSnapshot(sessionToken);
+        if (!cancelled) {
+          setWalletBalanceSnapshot(data || null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setWalletBalanceSnapshot(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionToken]);
+
   return (
     <div className="card">
-      <h2 style={{ marginTop: 0 }}>Admin Dashboard</h2>
+      <div className="headerRow">
+        <h2 style={{ margin: 0 }}>Admin Dashboard</h2>
+        <div className="headerMetric">{cryptoWalletHeaderText}</div>
+      </div>
 
       <div className="tabsRow">
         {allTabs.map((tab) => (
