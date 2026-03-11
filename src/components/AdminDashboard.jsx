@@ -677,6 +677,7 @@ const AdminDashboard = ({ sessionToken }) => {
               <th>USDT</th>
               <th>Address</th>
               <th>Error</th>
+              <th>Attempts</th>
               <th>Link TxId</th>
               <th>Action</th>
             </tr>
@@ -684,12 +685,13 @@ const AdminDashboard = ({ sessionToken }) => {
           <tbody>
             {webhookEvents.map((item) => (
               <tr key={item.id}>
-                <td>{item.receivedAt || "-"}</td>
+                <td className="dateTimeCell">{formatAdminDateTime(item.receivedAt)}</td>
                 <td style={{ maxWidth: 210, wordBreak: "break-all" }}>{item.txHash || "-"}</td>
                 <td style={{ maxWidth: 210, wordBreak: "break-all" }}>{item.memo || "-"}</td>
                 <td>{usdtFromMicros(item.usdtMicros)}</td>
                 <td style={{ maxWidth: 210, wordBreak: "break-all" }}>{item.toAddress || "-"}</td>
                 <td style={{ maxWidth: 220, wordBreak: "break-all" }}>{item.processingError || "-"}</td>
+                <td>{item.attempts ?? 1}</td>
                 <td>
                   <input
                     value={linkTxByEvent[item.id] || ""}
