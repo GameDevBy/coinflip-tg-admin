@@ -1,0 +1,44 @@
+name: Deploy Admin Client Prod Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: github-pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          CI: "false"
+          PUBLIC_URL: /coinflip-tg-admin
+          REACT_APP_SERVER_HOST: ${{ secrets.REACT_APP_SERVER_HOST || vars.REACT_APP_SERVER_HOST }}
+        run: |
+          test -n "$REACT_APP_SERVER_HOST" || { echo "Missing REACT_APP_SERVER_HOST secret"; exit 1; }
+          npm run build
+
+      - name: Deploy prod to gh-pages root
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build
+          publish_branch: gh-pages
+          keep_files: true
