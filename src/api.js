@@ -159,3 +159,10 @@ export const fetchUsersScoreRating = async (sessionToken, filters = {}) => {
   });
   return response.ok ? response.json() : null;
 };
+
+export const fetchShopStats = async (sessionToken, filters = {}) => {
+  const response = await apiFetch(`/api/admin/shop/stats${toQueryString(filters)}`, {
+    headers: { [AdminHeaders.session]: sessionToken || "" },
+  });
+  return response.ok ? response.json() : null;
+};

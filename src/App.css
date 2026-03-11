@@ -140,6 +140,11 @@ th {
   background: #f9fafb;
 }
 
+.dateTimeCell {
+  white-space: nowrap;
+  min-width: 132px;
+}
+
 @media (max-width: 640px) {
   .app {
     padding: 12px;
