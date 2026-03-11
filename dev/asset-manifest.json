@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/coinflip-tg-admin/dev/static/css/main.0560b166.css",
-    "main.js": "/coinflip-tg-admin/dev/static/js/main.248c933e.js",
+    "main.js": "/coinflip-tg-admin/dev/static/js/main.e321e4da.js",
     "index.html": "/coinflip-tg-admin/dev/index.html",
     "main.0560b166.css.map": "/coinflip-tg-admin/dev/static/css/main.0560b166.css.map",
-    "main.248c933e.js.map": "/coinflip-tg-admin/dev/static/js/main.248c933e.js.map"
+    "main.e321e4da.js.map": "/coinflip-tg-admin/dev/static/js/main.e321e4da.js.map"
   },
   "entrypoints": [
     "static/css/main.0560b166.css",
-    "static/js/main.248c933e.js"
+    "static/js/main.e321e4da.js"
   ]
 }
