@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import moment from "moment";
 import {
   fetchAdminWalletBalanceSnapshot,
+  fetchConversionHistory,
+  fetchConversionMetrics,
   fetchUnrecognizedWebhookEvents,
   fetchGamesHistory,
   fetchShopStats,
@@ -20,6 +22,7 @@ const Tabs = {
   transactions: "Transactions",
   webhookInbox: "Webhook Inbox",
   games: "Games",
+  economy: "Economy",
   users: "Users",
   shop: "Shop",
 };
@@ -124,6 +127,8 @@ const AdminDashboard = ({ sessionToken }) => {
   });
 
   const [games, setGames] = useState([]);
+  const [conversionRows, setConversionRows] = useState([]);
+  const [conversionMetrics, setConversionMetrics] = useState(null);
   const [webhookEvents, setWebhookEvents] = useState([]);
   const [webhookLimit, setWebhookLimit] = useState("200");
   const [linkTxByEvent, setLinkTxByEvent] = useState({});
@@ -136,6 +141,13 @@ const AdminDashboard = ({ sessionToken }) => {
     enhanced: "",
     initiatorChoice: "",
     outcome: "",
+  });
+  const [conversionFilters, setConversionFilters] = useState({
+    telegramId: "",
+    username: "",
+    qualified: "",
+    tier: "",
+    reason: "",
   });
 
   const [users, setUsers] = useState([]);
@@ -189,6 +201,25 @@ const AdminDashboard = ({ sessionToken }) => {
         ...gameFilters,
       });
       setGames(data || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadConversion = async () => {
+    setLoading(true);
+    try {
+      const [metricsData, historyData] = await Promise.all([
+        fetchConversionMetrics(sessionToken, {
+          ...baseDateFilters,
+        }),
+        fetchConversionHistory(sessionToken, {
+          ...baseDateFilters,
+          ...conversionFilters,
+        }),
+      ]);
+      setConversionMetrics(metricsData || null);
+      setConversionRows(historyData || []);
     } finally {
       setLoading(false);
     }
@@ -650,6 +681,98 @@ const AdminDashboard = ({ sessionToken }) => {
     </>
   );
 
+  const renderEconomy = () => (
+    <>
+      <div className="filterGrid">
+        <input
+          placeholder="tg_id"
+          value={conversionFilters.telegramId}
+          onChange={(e) => setConversionFilters((prev) => ({ ...prev, telegramId: e.target.value.replace(/[^0-9]/g, "") }))}
+        />
+        <input
+          placeholder="username"
+          value={conversionFilters.username}
+          onChange={(e) => setConversionFilters((prev) => ({ ...prev, username: e.target.value }))}
+        />
+        <select value={conversionFilters.qualified} onChange={(e) => setConversionFilters((prev) => ({ ...prev, qualified: e.target.value }))}>
+          <option value="">Qualified</option>
+          <option value="true">YES</option>
+          <option value="false">NO</option>
+        </select>
+        <select value={conversionFilters.tier} onChange={(e) => setConversionFilters((prev) => ({ ...prev, tier: e.target.value }))}>
+          <option value="">Tier</option>
+          <option value="NORMAL">NORMAL</option>
+          <option value="WARNING">WARNING</option>
+          <option value="BLOCKED">BLOCKED</option>
+          <option value="NONE">NONE</option>
+        </select>
+        <input
+          placeholder="reason contains"
+          value={conversionFilters.reason}
+          onChange={(e) => setConversionFilters((prev) => ({ ...prev, reason: e.target.value }))}
+        />
+      </div>
+      <button className="button" disabled={loading} onClick={loadConversion}>
+        Load Conversion Analytics
+      </button>
+
+      {conversionMetrics && (
+        <div className="item" style={{ marginTop: 10, display: "grid", gap: 4 }}>
+          <strong>Conversion Metrics</strong>
+          <div>Games: {conversionMetrics.gamesCount ?? 0}</div>
+          <div>Player sides: {conversionMetrics.playerSidesCount ?? 0}</div>
+          <div>Qualified sides: {conversionMetrics.qualifiedSidesCount ?? 0}</div>
+          <div>Risk blocked sides: {conversionMetrics.blockedByRiskSidesCount ?? 0}</div>
+          <div>Warning tier sides: {conversionMetrics.warningTierSidesCount ?? 0}</div>
+          <div>Normal tier sides: {conversionMetrics.normalTierSidesCount ?? 0}</div>
+          <div>Raw conversion: Ⓕ{flipkyFromCents(conversionMetrics.totalConversionRawCents || 0)}</div>
+          <div>Applied conversion: Ⓕ{flipkyFromCents(conversionMetrics.totalConversionAppliedCents || 0)}</div>
+        </div>
+      )}
+
+      <div className="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th className="dateTimeCell">Played</th>
+              <th>tg_id</th>
+              <th>User</th>
+              <th>Opponent</th>
+              <th>Bet Ⓕ</th>
+              <th>Stake locked Ⓕ</th>
+              <th>Stake real Ⓕ</th>
+              <th>Tier</th>
+              <th>Qualified</th>
+              <th>Risk</th>
+              <th>Reason</th>
+              <th>Raw Ⓕ</th>
+              <th>Applied Ⓕ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {conversionRows.map((item) => (
+              <tr key={`${item.gameId}:${item.userId}`}>
+                <td className="dateTimeCell">{formatAdminDateTime(item.playedAt)}</td>
+                <td>{item.userTelegramId || "-"}</td>
+                <td>{item.username || "-"}</td>
+                <td>{item.opponentUsername || "-"} ({item.opponentTelegramId || "-"})</td>
+                <td>{flipkyFromCents(item.betCents || 0)}</td>
+                <td>{flipkyFromCents(item.lockedStakeCents || 0)}</td>
+                <td>{flipkyFromCents(item.realStakeCents || 0)}</td>
+                <td>{item.tier || "-"}</td>
+                <td>{item.qualified ? "YES" : "NO"}</td>
+                <td>{item.riskScore ?? 0}</td>
+                <td>{item.reason || "-"}</td>
+                <td>{flipkyFromCents(item.conversionRawCents || 0)}</td>
+                <td>{flipkyFromCents(item.conversionAppliedCents || 0)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+
   const renderWebhookInbox = () => (
     <>
       <div className="filterGrid">
@@ -912,6 +1035,9 @@ const AdminDashboard = ({ sessionToken }) => {
     if (activeTab === Tabs.games && games.length === 0) {
       loadGames();
     }
+    if (activeTab === Tabs.economy && conversionRows.length === 0 && !conversionMetrics) {
+      loadConversion();
+    }
     if (activeTab === Tabs.users && users.length === 0) {
       loadUsers();
     }
@@ -973,6 +1099,7 @@ const AdminDashboard = ({ sessionToken }) => {
         {activeTab === Tabs.transactions && renderTransactions()}
         {activeTab === Tabs.webhookInbox && renderWebhookInbox()}
         {activeTab === Tabs.games && renderGames()}
+        {activeTab === Tabs.economy && renderEconomy()}
         {activeTab === Tabs.users && renderUsers()}
         {activeTab === Tabs.shop && renderShop()}
       </div>

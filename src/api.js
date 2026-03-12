@@ -173,3 +173,17 @@ export const fetchShopStats = async (sessionToken, filters = {}) => {
   });
   return response.ok ? response.json() : null;
 };
+
+export const fetchConversionMetrics = async (sessionToken, filters = {}) => {
+  const response = await apiFetch(`/api/admin/economy/conversion/metrics${toQueryString(filters)}`, {
+    headers: { [AdminHeaders.session]: sessionToken || "" },
+  });
+  return response.ok ? response.json() : null;
+};
+
+export const fetchConversionHistory = async (sessionToken, filters = {}) => {
+  const response = await apiFetch(`/api/admin/economy/conversion/history${toQueryString(filters)}`, {
+    headers: { [AdminHeaders.session]: sessionToken || "" },
+  });
+  return response.ok ? response.json() : null;
+};
